@@ -26,9 +26,9 @@ def dedup(fname, randcrit):
             for line in f:
                 linecount += 1
 
-                if linecount % 100000 == 0:
+                if linecount % 10000 == 0:
                     pmem = float(psutil.virtual_memory().percent)
-                    if pmem > 70:
+                    if pmem > 60:
                         for i in range(200000):
                             cache.pop()
                 try:
@@ -53,12 +53,14 @@ def dedup(fname, randcrit):
     print('removed', dups, 'duplicate lines, wrote',writecount)
     return newname 
 
-cycles = 5
-randcrit = 0.9
 
-for i in range(cycles):
-    print('dedup cycle', i+1, 'of', cycles)
-    dedup('attr.table.dedup', randcrit)
-    os.rename('attr.table.dedup.dedup', 'attr.table.dedup')
-   
-print('done') 
+def attrdedup():
+	cycles = 10
+	randcrit = 0.8
+	
+	for i in range(cycles):
+	    print('dedup cycle', i+1, 'of', cycles)
+	    dedup('attr.table.dedup', randcrit)
+	    os.rename('attr.table.dedup.dedup', 'attr.table.dedup')
+	   
+	print('done') 

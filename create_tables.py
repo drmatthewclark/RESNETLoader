@@ -16,6 +16,8 @@ import re
 import os
 import sys
 import fileinput
+import dedup
+
 DELIMITER = '\x07'
 
 MAX_CACHE = 50000000
@@ -113,14 +115,19 @@ def create():
     global conn
     conn=psql.connect(user=dbname)    
     tables = ["node", "control", "pathway", "attr" ]
-    initdb() 
+    initdb()
 
     for t in tables:
-        dedup(t + ".table")            
+        dedup(t + ".table")
+
+    print('deduplicating attributes table, will take a while...')
+    dedup.attrdedup()
+    print('done deduplicating')
+
 
     copycmd = "psql -c \"\copy resnet.xxxx from 'xxxx.table.dedup' with (delimiter E'\x07' ,format csv, quote E'\x01')\""
     for t in tables:
-        print('loading', t)
+        print('loading table', t)
         cmd = re.sub("xxxx",t,copycmd)
         os.system(cmd)
 

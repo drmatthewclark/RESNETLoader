@@ -12,7 +12,7 @@ import re
 import sys
 from timeit import default_timer as timer
 from datetime import timedelta
-import create_tables
+#import create_tables
 
 # xml header
 xmlheader = '<?xml version="1.0" encoding="UTF-8" standalone="no" ?>\n'
@@ -136,8 +136,8 @@ def parseResnet(xml):
     controlHashes = []
     for item in doc.findall('./controls/control'): # controls
         controlRef = []
-        inref = None
-        outref = None
+        inref = []
+        outref = []
         # in some cases there may be more than one item for in and out
         # however these may be only for the lipidomics project.  If required
         # the data type could be arrays instead of integers
@@ -145,9 +145,9 @@ def parseResnet(xml):
           ref = fitem.get('ref')
           ty = fitem.get('type')
           if ty == 'in':
-            inref = nodeLocalId[ref]
+            inref.append(nodeLocalId[ref])
           elif ty == 'out':
-            outref = nodeLocalId[ref]
+            outref.append(nodeLocalId[ref])
 
         for gitem in item.findall('./attr'): #attributes
           val = indexAttribute(gitem)
@@ -202,18 +202,26 @@ def readfile(fname):
 
 
 attrcache = set()
-MAXCACHE = 1000000
-def tryattrcache(i,f):
+# cache size limit to avoid runnin out of memory
+MAXCACHE = 10000000
 
+def tryattrcache(i,f):
+    """
+    try to identify obvious duplicates early to make deduplication easier later
+    """
     idx   = i[0]
     dtype = i[1]
+    value = i[2] # value
 
     if idx in attrcache:
         return
 
-    elif 'Type' in dtype:
-        if len(attrcache) < MAXCACHE:
+    elif not 'ID' in dtype:
+        # if the value is long it is not worth caching
+        if len(value) < 256 and len(attrcache) < MAXCACHE:
             attrcache.add(idx)
+        else:
+            attrcache.pop()
 
     writedb(i,f)
  

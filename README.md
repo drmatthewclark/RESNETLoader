@@ -12,7 +12,7 @@ Attributes	 418,665,551
 <br>
 entities 	 1,468,315
 <br>
-relationships	 13,831,792
+relationships	 14,774,045
 <br>
 curated pathways 2,316
 <br>

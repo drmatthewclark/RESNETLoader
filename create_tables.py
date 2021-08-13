@@ -54,8 +54,8 @@ def initdb():
     create schema resnet;
     create table resnet.version(name text, value text);
     create table resnet.attr( id bigint, name text, value text, index integer);
-    create table resnet.node( id bigint, urn text, attributes bigint[]);
-    create table resnet.control(id bigint, inkey bigint, outkey bigint, attributes bigint[]);
+    create table resnet.node( id bigint, urn text, name text, type text, attributes bigint[]);
+    create table resnet.control(id bigint, inkey bigint[], outkey bigint[], attributes bigint[]);
     create table resnet.pathway(id bigint, name text, type text, urn text, attributes bigint[], controls bigint[]);
     create or replace view resnet.nodev as (select node.id, urn, name as type, value from 
         resnet.node, resnet.attr where attr.id = any(node.attributes));
@@ -84,6 +84,10 @@ def indexdb():
     # clean up duplicates left over in attr
     dedup = 'delete from resnet.attr t1 using resnet.attr t2 where t1.id = t2.id and t1.ctid > t2.ctid;'
 
+    addname = """
+    update node set name = attr.value from attr where attr.id = any(node.attributes) and attr.name = 'Name';
+    update node set type = attr.value from attr where attr.id = any(node.attributes) and attr.name = 'NodeType';
+    """
     # create indices """
     sql = """
              alter table resnet.attr add PRIMARY KEY (id);
@@ -92,8 +96,6 @@ def indexdb():
              alter table resnet.node add PRIMARY KEY (id);
              create index on resnet.node(urn);
              alter table resnet.control add PRIMARY KEY(id);
-             create index on resnet.control(inkey);
-             create index on resnet.control(outkey);
              alter table resnet.pathway add PRIMARY KEY(id);
              create index on resnet.pathway(name);
              create index on resnet.pathway(type);
@@ -114,21 +116,27 @@ conn = None
 def create(): 
     global conn
     conn=psql.connect(user=dbname)    
-    tables = ["node", "control", "pathway", "attr" ]
+    tables = ["node", "control", "pathway" ]
     initdb()
 
     for t in tables:
-        dedup(t + ".table")
+        dedup(t + ".table",1.0)
 
     print('deduplicating attributes table, will take a while...')
     dedup.attrdedup()
     print('done deduplicating')
 
 
-    copycmd = "psql -c \"\copy resnet.xxxx from 'xxxx.table.dedup' with (delimiter E'\x07' ,format csv, quote E'\x01')\""
+    copycmd = "psql -c \"\copy resnet.xxxx from 'xxxx.table.dedup' with (delimiter E'\x07', format csv)\""
+    attrcopycmd = "psql -c \"\copy resnet.xxxx from 'xxxx.table.dedup' with (delimiter E'\x07' ,format csv, quote E'\x01')\""
     for t in tables:
         print('loading table', t)
         cmd = re.sub("xxxx",t,copycmd)
+        os.system(cmd)
+
+    for t in ["attr"]:
+        print('loading table', t)
+        cmd = re.sub("xxxx",t,attrcopycmd)
         os.system(cmd)
 
     indexdb()

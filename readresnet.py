@@ -143,11 +143,13 @@ def parseResnet(xml):
         # the data type could be arrays instead of integers
         for fitem in item.findall('./link'): # links
           ref = fitem.get('ref')
-          ty = fitem.get('type')
-          if ty == 'in':
+          ty =  fitem.get('type')
+          if ty == 'in' or ty == 'in-out':
             inref.append(nodeLocalId[ref])
           elif ty == 'out':
             outref.append(nodeLocalId[ref])
+          else:
+            print('*****  unknown link type:', ty)
 
         for gitem in item.findall('./attr'): #attributes
           val = indexAttribute(gitem)

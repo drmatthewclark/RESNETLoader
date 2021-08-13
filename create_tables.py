@@ -6,10 +6,6 @@
 
 # owner of database or db to connect to
 dbname='mclark'
-debug = True
-noinsert = False  # true for testing without database inserts
-checkpointfile = 'resnet.record'
-stopfile = 'resnet.stop'
 
 import psycopg2 as psql
 import re
@@ -55,14 +51,8 @@ def initdb():
     create table resnet.version(name text, value text);
     create table resnet.attr( id bigint, name text, value text, index integer);
     create table resnet.node( id bigint, urn text, name text, type text, attributes bigint[]);
-    create table resnet.control(id bigint, inkey bigint[], outkey bigint[], attributes bigint[]);
+    create table resnet.control(id bigint, inkey bigint[], inoutkey bigint[], outkey bigint[], attributes bigint[]);
     create table resnet.pathway(id bigint, name text, type text, urn text, attributes bigint[], controls bigint[]);
-    create or replace view resnet.nodev as (select node.id, urn, name as type, value from 
-        resnet.node, resnet.attr where attr.id = any(node.attributes));
-    create or replace view resnet.controlv as (select control.id, i.urn as inkey, o.urn as outkey, 
-        name as type, value from 
-        resnet.control, resnet.node i, resnet.node o, resnet.attr where i.id = inkey and o.id = outkey 
-        and attr.id = any(control.attributes));
     """
 
     print('initializing schema')
@@ -111,24 +101,18 @@ def indexdb():
         cur.execute(sql)
     conn.commit()    
 
+    with conn.cursor() as cur:
+        cur.execute(addname)
+    conn.commit()    
+
 conn = None
-
-def create(): 
-    global conn
-    conn=psql.connect(user=dbname)    
-    tables = ["node", "control", "pathway" ]
-    initdb()
-
-    for t in tables:
-        dedup(t + ".table",1.0)
-
-    print('deduplicating attributes table, will take a while...')
-    dedup.attrdedup()
-    print('done deduplicating')
-
-
+def load():
     copycmd = "psql -c \"\copy resnet.xxxx from 'xxxx.table.dedup' with (delimiter E'\x07', format csv)\""
     attrcopycmd = "psql -c \"\copy resnet.xxxx from 'xxxx.table.dedup' with (delimiter E'\x07' ,format csv, quote E'\x01')\""
+
+    tables = ["node", "control", "pathway" ]
+
+    initdb()
     for t in tables:
         print('loading table', t)
         cmd = re.sub("xxxx",t,copycmd)
@@ -140,5 +124,19 @@ def create():
         os.system(cmd)
 
     indexdb()
-   
+
+
+def create(): 
+    global conn
+    conn=psql.connect(user=dbname)    
+    tables = ["node", "control", "pathway" ]
+
+    for t in tables:
+        dedup(t + ".table",1.0)
+
+    print('deduplicating attributes table, will take a while...')
+    dedup.attrdedup()
+    print('done deduplicating')
+
+    load()
  

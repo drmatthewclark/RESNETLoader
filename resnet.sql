@@ -1,3 +1,11 @@
+/*
+index tables, and add some denormalized fields to the relationship 
+to make searching easier
+
+
+*/
+
+
 set search_path to resnet;
 
 alter table resnet.control add PRIMARY KEY(id);
@@ -17,6 +25,9 @@ create index on resnet.pathway(urn);
 
 
 create index on resnet.reference(id);
+create index on resnet.reference(tissue);
+create index on resnet.reference(pubyear);
+create index on resnet.reference(textref);
 
 select * into resnet.temp_outkey from  (select control.id, string_agg(node.name, '|') as outname  from control, node where node.id = any(control.outkey) group by control.id)a;
 select * into resnet.temp_inkey from  (select control.id, string_agg(node.name, '|') as inname  from control, node where node.id = any(control.inkey) group by control.id)a;
@@ -46,5 +57,3 @@ create index on resnet.control(mechanism);
 create index on resnet.control(inname);
 create index on resnet.control(outname);
 create index on resnet.control(inoutname);
-
-vacuum verbose analyze control;

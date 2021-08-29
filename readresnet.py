@@ -29,7 +29,7 @@ DELIMITER =  '\x07'  # char not found in data
 
 # fields in reference table
 refitems = ['id', 'Authors', 'BiomarkerType', 'CellLineName', 'CellObject', 'CellType', 'ChangeType', 'Collaborator', 'Company', 'Condition', 'DOI',
-'EMBASE', 'ESSN', 'Experimental System', 'Intervention', 'ISSN', 'Journal', 'Mechanism', 'MedlineTA', 'Mode of Action', 'mref','msrc',
+'EMBASE', 'ESSN', 'Experimental System', 'Intervention', 'ISSN', 'Journal', 'MedlineTA', 'Mode of Action', 'mref','msrc',
 'NCT ID', 'Organ', 'Organism', 'Percent', 'Phase', 'Phenotype', 'PII', 'PMID', 'PubVersion', 'PubYear', 'PUI',
 'pX', 'QuantitativeType', 'Source', 'Start', 'StudyType', 'TextMods', 'TextRef', 'Tissue', 'Title', 'TrialStatus', 'URL']
 

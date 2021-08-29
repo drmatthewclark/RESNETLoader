@@ -237,7 +237,8 @@ def parseResnet(xml):
 
     # end of loop over controls
     if isPath:
-        p  = (rhash, rname, rtyp, rurn, resnetHashes, controlHashes)
+        phash = myhash( str((rhash, rname, rtyp, rurn, resnetHashes, controlHashes)) )
+        p  = (phash, rname, rtyp, rurn, resnetHashes, controlHashes)
         pathways.append(p)
 
     # final  return 

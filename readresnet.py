@@ -135,9 +135,8 @@ def parseResnet(xml):
                 nodeType = val[2]
             else:
                 attributes.append(val)
-
-            hcode = val[0]
-            nodeRef.append(hcode)
+                hcode = val[0]
+                nodeRef.append(hcode)
 
         node = (nodehash, urn, nodeName, nodeType, nodeRef )
         nodes.append(node)

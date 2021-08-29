@@ -12,48 +12,46 @@ import re
 import os
 import sys
 import fileinput
-import dedup
+import os
 
-DELIMITER = '\x07'
-
-MAX_CACHE = 50000000
+tables = ['node', 'control', 'pathway', 'attr', 'reference' ]
+dedupcmd = "sort -T `pwd` -t $'\x07' -k 1  -u xxxx  > yyyy"
 
 def dedup(fname):
-    print('deduplicating', fname)
-    newname = fname + '.dedup'
-    cache = set() 
-    linecount = 0 
-    errorcount = 0
 
-    with open(newname, 'w') as outfile:
-        with open(fname, 'r') as f:
-            for line in f:
-                linecount += 1
-                try:
-                    index = int(line.split(DELIMITER)[0])
-                    if not index in cache:
-                        if len(cache) < MAX_CACHE:
-                            cache.add(index)
-                        outfile.write(line)
-                except:
-                    errorcount += 1
-                    print('error at line',linecount, 'skipping:')
-                    print(line)
+    output = fname + '.dedup'
+    print('deduplicating',fname,'to', output)
+    lcmd = re.sub('xxxx',fname,dedupcmd)
+    lcmd = re.sub('yyyy', output, lcmd)
 
-    print(fname, ' had unique values:', len(cache), 'errors:', errorcount )
+    os.system(lcmd)
 
 
+ 
 def initdb():
     """ initialize db """
+
     drop = "drop schema resnet cascade"
     sql = """
     create schema resnet;
     create table resnet.version(name text, value text);
     create table resnet.attr( id bigint, name text, value text, index integer);
-    create table resnet.node( id bigint, urn text, name text, type text, attributes bigint[]);
-    create table resnet.control(id bigint, inkey bigint[], inoutkey bigint[], outkey bigint[], attributes bigint[]);
+    create table resnet.node( id bigint, urn text, name text, nodetype text, attributes bigint[]);
+
+    create table resnet.control(id bigint, inkey bigint[], inoutkey bigint[], outkey bigint[], controltype text,
+        ontology text, relationship text, effect text, mechanism text, attributes bigint);
+
     create table resnet.pathway(id bigint, name text, type text, urn text, attributes bigint[], controls bigint[]);
+
+    create table resnet.reference ( id bigint,
+       Authors text, BiomarkerType text, CellLineName text, CellObject text, CellType text, ChangeType text, Collaborator text, Company text, Condition text,
+       DOI text, EMBASE text, ESSN text, Experimental_System text, Intervention text, ISSN text, Journal text, Mechanism text, MedlineTA text, Mode_of_Action text,
+       mref text, msrc text, NCT_ID text, Organ text, Organism text, Percent text, Phase text, Phenotype text, PII text, PMID text, PubVersion text, PubYear integer, PUI text,
+       pX float, QuantitativeType text, Source text, Start text, StudyType text, TextMods text, TextRef text, Tissue text, Title text, TrialStatus text, URL text);
+
     """
+
+    conn = psql.connect(dbname=dbname)
 
     print('initializing schema')
     try:
@@ -71,46 +69,22 @@ def initdb():
 
 def indexdb():
 
-    # clean up duplicates left over in attr
-    dedup = 'delete from resnet.attr t1 using resnet.attr t2 where t1.id = t2.id and t1.ctid > t2.ctid;'
-
-    addname = """
-    update node set name = attr.value from attr where attr.id = any(node.attributes) and attr.name = 'Name';
-    update node set type = attr.value from attr where attr.id = any(node.attributes) and attr.name = 'NodeType';
-    """
     # create indices """
-    sql = """
-             alter table resnet.attr add PRIMARY KEY (id);
-             create index on resnet.attr(name);
-             create index on resnet.attr(value);
-             alter table resnet.node add PRIMARY KEY (id);
-             create index on resnet.node(urn);
-             alter table resnet.control add PRIMARY KEY(id);
-             alter table resnet.pathway add PRIMARY KEY(id);
-             create index on resnet.pathway(name);
-             create index on resnet.pathway(type);
-             create index on resnet.pathway(urn);
-            
-    """
+    this_path  = os.path.dirname(os.path.abspath(__file__))
+    with open(this_path + '/resnet.sql', 'r') as sf:
+        sql = sf.read()
 
-    with conn.cursor() as cur:
-        cur.execute(dedup)
-    conn.commit()
+    conn = psql.connect(dbname=dbname)
 
     with conn.cursor() as cur:
         cur.execute(sql)
     conn.commit()    
 
-    with conn.cursor() as cur:
-        cur.execute(addname)
-    conn.commit()    
+    conn.close()
 
-conn = None
+
 def load():
-    copycmd = "psql -c \"\copy resnet.xxxx from 'xxxx.table.dedup' with (delimiter E'\x07', format csv)\""
-    attrcopycmd = "psql -c \"\copy resnet.xxxx from 'xxxx.table.dedup' with (delimiter E'\x07' ,format csv, quote E'\x01')\""
-
-    tables = ["node", "control", "pathway" ]
+    copycmd = "psql -c \"\copy resnet.xxxx from 'xxxx.table.dedup' with (delimiter E'\x07' ,format csv, quote E'\x01')\""
 
     initdb()
     for t in tables:
@@ -118,25 +92,17 @@ def load():
         cmd = re.sub("xxxx",t,copycmd)
         os.system(cmd)
 
-    for t in ["attr"]:
-        print('loading table', t)
-        cmd = re.sub("xxxx",t,attrcopycmd)
-        os.system(cmd)
-
     indexdb()
 
 
 def create(): 
-    global conn
-    conn=psql.connect(user=dbname)    
-    tables = ["node", "control", "pathway" ]
 
     for t in tables:
-        dedup(t + ".table",1.0)
-
-    print('deduplicating attributes table, will take a while...')
-    dedup.attrdedup()
+        if t != 'reference':
+            dedup(t + ".table")
+    os.system('ln -s  reference.table reference.table.dedup')
     print('done deduplicating')
 
     load()
- 
+
+create()

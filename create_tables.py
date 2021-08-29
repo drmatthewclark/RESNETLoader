@@ -14,7 +14,7 @@ import sys
 import fileinput
 import os
 
-tables = ['node', 'control', 'pathway', 'attr', 'reference' ]
+tables = ['node', 'control', 'pathway', 'attr', 'reference' , 'version' ]
 dedupcmd = "sort -T `pwd` -t $'\x07' -k 1  -u xxxx  > yyyy"
 
 def dedup(fname):

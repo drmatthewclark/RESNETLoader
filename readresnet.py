@@ -22,10 +22,8 @@ import traceback
 xmlheader = '<?xml version="1.0" encoding="UTF-8" standalone="no" ?>\n'
 # tracks total database writes
 linesread = 0
-records = 0
 # total lines in current release
 totalines = 1206676587
-DELIMITER =  '\x07'  # char not found in data
 
 # fields in reference table
 refitems = ['id', 'Authors', 'BiomarkerType', 'CellLineName', 'CellObject', 'CellType', 'ChangeType', 'Collaborator', 'Company', 'Condition', 'DOI',
@@ -58,20 +56,20 @@ def dictToArray(dic):
 
     return result        
 
-
 refmap = makerefmap()
 
 def parseVersion(xml):
     """ write version records to version table """
     sql = 'insert into resnet.version (name,value) values (%s,%s);'
     doc = ElementTree(ET.fromstring(xml))
-
-    h = doc.findall('.//attr')
-    for hitem in h:
-        name = hitem.get('name')
-        value = hitem.get('value')
-        val = (name, value)
-        print('name:%s\t  value: %s' % val )
+    with open('version','w') as f:
+        h = doc.findall('.//attr')
+        for hitem in h:
+            name = hitem.get('name')
+            value = hitem.get('value')
+            val = (name, value)
+            print ( 'name:%s\tval:%s' % val )
+            versioncache.write(val, f) 
     
 def indexAttribute(item):
 
@@ -145,9 +143,7 @@ def parseResnet(xml):
         nodes.append(node)
 
     controlHashes = []
-    controlattributes =  []
     for item in doc.findall('./controls/control'): # controls
-        controlRef = []
         inref = []
         outref = []
         inoutref = []
@@ -279,11 +275,12 @@ def readfile(fname):
         nodecache.stats()
         pathcache.stats()
 
+versioncache = CachingWriter('version', False)
 attrcache    = CachingWriter('attr')
 controlcache = CachingWriter('control')
 refcache = CachingWriter('reference', False) # no caching
 nodecache = CachingWriter('node')
-pathcache = CachingWriter('pathways')
+pathcache = CachingWriter('pathway')
 
 def precord(record):
     """ parse record and create db records """

@@ -45,10 +45,9 @@ def initdb():
 
     create table resnet.reference ( id bigint,
        Authors text, BiomarkerType text, CellLineName text, CellObject text, CellType text, ChangeType text, Collaborator text, Company text, Condition text,
-       DOI text, EMBASE text, ESSN text, Experimental_System text, Intervention text, ISSN text, Journal text, Mechanism text, MedlineTA text, Mode_of_Action text,
+       DOI text, EMBASE text, ESSN text, Experimental_System text, Intervention text, ISSN text, Journal text, MedlineTA text, Mode_of_Action text,
        mref text, msrc text, NCT_ID text, Organ text, Organism text, Percent text, Phase text, Phenotype text, PII text, PMID text, PubVersion text, PubYear integer, PUI text,
        pX float, QuantitativeType text, Source text, Start text, StudyType text, TextMods text, TextRef text, Tissue text, Title text, TrialStatus text, URL text);
-
     """
 
     conn = psql.connect(dbname=dbname)
@@ -84,9 +83,12 @@ def indexdb():
 
 
 def load():
+
+    """ load tables.  the only feasible way for tables this large is ti  use the copy command"""
     copycmd = "psql -c \"\copy resnet.xxxx from 'xxxx.table.dedup' with (delimiter E'\x07' ,format csv, quote E'\x01')\""
 
     initdb()
+
     for t in tables:
         print('loading table', t)
         cmd = re.sub("xxxx",t,copycmd)
@@ -98,8 +100,10 @@ def load():
 def create(): 
 
     for t in tables:
-        if t != 'reference':
+        if t != 'reference':   # skip deduplicating this table
             dedup(t + ".table")
+
+    # create .dedup version of the table
     os.system('ln -s  reference.table reference.table.dedup')
     print('done deduplicating')
 

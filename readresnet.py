@@ -151,6 +151,8 @@ def parseResnet(xml):
         relationship = ''
         mechanism = ''
         effect = ''
+        rhash = myhash(item.tostring()) # hash for this control
+
         # in some cases there may be more than one item for in and out
         # however these may be only for the lipidomics project.  If required
         # the data type could be arrays instead of integers
@@ -168,7 +170,6 @@ def parseResnet(xml):
 
         ref = makeref()
         setavalue = False
-        rhash = myhash(str(item)) # hash for this control
         localrefs = []
 
         for gitem in item.findall('./attr'): #attributes of the control

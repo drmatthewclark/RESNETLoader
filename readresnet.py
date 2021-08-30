@@ -26,7 +26,7 @@ linesread = 0
 totalines = 1206676587
 
 # fields in reference table
-refs = ['id', 'Authors', 'BiomarkerType', 'CellLineName', 'CellObject', 'CellType', 'ChangeType', 'Collaborator', 'Company', 'Condition', 'DOI',
+refcolumns  = ['id', 'Authors', 'BiomarkerType', 'CellLineName', 'CellObject', 'CellType', 'ChangeType', 'Collaborator', 'Company', 'Condition', 'DOI',
 'EMBASE', 'ESSN', 'Experimental System', 'Intervention', 'ISSN', 'Journal', 'MedlineTA', 'Mode of Action', 'mref','msrc',
 'NCT ID', 'Organ', 'Organism', 'Percent', 'Phase', 'Phenotype', 'PII', 'PMID', 'PubVersion', 'PubYear', 'PUI',
 'pX', 'QuantitativeType', 'Source', 'Start', 'StudyType', 'TextMods', 'TextRef', 'Tissue', 'Title', 'TrialStatus', 'URL']
@@ -36,23 +36,23 @@ refs = ['id', 'Authors', 'BiomarkerType', 'CellLineName', 'CellObject', 'CellTyp
 def makerefmap():
     result = {}
     count = 0
-    for  in refitems:
-        result[] = count
+    for ref in refcolumns:
+        result[ref] = count
         count += 1
 
     return result
 
 # make reference array
 def makeref():
-    return ['']*len(refs)
+    return ['']*len(refcolumns)
 
 # return an array in the "correct" order from the
 # reference dictionary
 def dictToArray(dic):
     result = []
-    for i in refs:
-         = dic[i]
-        result.append()
+    for i in refcolumns:
+        ref = dic[i]
+        result.append(ref)
 
     return result        
 
@@ -71,11 +71,11 @@ def parseVersion(xml):
             print ( 'name:%s\tval:%s' % val )
             versioncache.write(val, f) 
     
-def indexAttribute():
-
-    name = .get('name')
-    value = .get('value')
-    index = .get('index')
+def indexAttribute(attr):
+    # attr is an XML document
+    name  = attr.get('name')
+    value = attr.get('value')
+    index = attr.get('index')
     
     hcode = myhash(name + '|' + value + '|' + str(index))
     val = (hcode, name, value, index)
@@ -109,8 +109,8 @@ def parseResnet(xml):
         rurn = e.get('urn')
         resnetHashes = []
 
-        for  in doc.findall('./properties/attr'):
-            val = indexAttribute()
+        for attr in doc.findall('./properties/attr'):
+            val = indexAttribute(attr)
             resnetHashes.append(val[0])
             # keep those attributes connected to resnet properties
             resnetAttributes.append(val)
@@ -127,7 +127,7 @@ def parseResnet(xml):
         nodeName = ''
         nodeType = ''
 
-        for nodeattr in .findall('./attr'):
+        for nodeattr in node.findall('./attr'):
             val = indexAttribute(nodeattr)
             if val[1] ==  'Name':
                 nodeName = val[2]
@@ -156,7 +156,7 @@ def parseResnet(xml):
         # in some cases there may be more than one  for in and out
         # however these may be only for the lipidomics project.  If required
         # the data type could be arrays instead of integers
-        for controllink in item.findall('./link'): # links
+        for controllink in control.findall('./link'): # links
           ref = controllink.get('ref')
           ty =  controllink.get('type')
           if ty == 'in':

@@ -2,9 +2,12 @@ import hashlib
 
 def myhash(text):
     """ replaces the built in python hash function with one that is deterministic """
+
+    if isinstance(text, str):
+        text = text.encode('utf8')
  
     # use md5 to create a hash
-    digest  = hashlib.md5(text.encode('utf8')).hexdigest()
+    digest  = hashlib.md5(text).hexdigest()
     dint = int(digest,16)  # create 128 bit integer
 
     # xor high and low halves

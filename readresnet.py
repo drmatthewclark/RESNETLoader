@@ -62,7 +62,7 @@ def parseVersion(xml):
     """ write version records to version table """
     sql = 'insert into resnet.version (name,value) values (%s,%s);'
     doc = ElementTree(ET.fromstring(xml))
-    with open('version','w') as f:
+    with open('version.table','w') as f:
         h = doc.findall('.//attr')
         for hitem in h:
             name = hitem.get('name')
@@ -291,7 +291,7 @@ def precord(record):
         for i in controls:
             controlcache.write(i, f)
 
-    with open('references.table', 'a') as f:  # references is an array of arrays
+    with open('reference.table', 'a') as f:  # references is an array of arrays
         for i in references:
             refcache.write(i, f)
 

@@ -151,7 +151,7 @@ def parseResnet(xml):
         relationship = ''
         mechanism = ''
         effect = ''
-        rhash = myhash(ET.tostring(item, encoding='utf-8').decode()) # hash for this control
+        rhash = myhash(ET.tostring(item, encoding='unicode',method='text')) # hash for this control
 
         # in some cases there may be more than one item for in and out
         # however these may be only for the lipidomics project.  If required

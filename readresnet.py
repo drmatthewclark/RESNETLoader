@@ -14,7 +14,7 @@ from timeit import default_timer as timer
 from datetime import timedelta
 from cachingwriter import CachingWriter
 import traceback
-
+import random
 
 #import create_tables
 
@@ -24,6 +24,8 @@ xmlheader = '<?xml version="1.0" encoding="UTF-8" standalone="no" ?>\n'
 linesread = 0
 # total lines in current release
 totalines = 1206676587
+# reproducible seed
+random.seed('resnetloader')
 
 # fields in reference table
 refcolumns  = ['id', 'Authors', 'BiomarkerType', 'CellLineName', 'CellObject', 'CellType', 'ChangeType', 'Collaborator', 'Company', 'Condition', 'DOI',
@@ -43,8 +45,10 @@ def makerefmap():
     return result
 
 # make reference array
-def makeref():
-    return ['']*len(refcolumns)
+def makeref(refhash):
+    result = ['']*len(refcolumns)
+    result[0] = refhash
+    return result
 
 # return an array in the "correct" order from the
 # reference dictionary
@@ -152,7 +156,10 @@ def parseResnet(xml):
         relationship = ''
         mechanism = ''
         effect = ''
-        refhash = myhash(ET.tostring(control, encoding='unicode',method='text')) # hash for this control
+        uniquestring  = str(control) + str(random.random()) # unique string for this control
+        # tried using xml of the control for this snippet but generating the XML is very slow.
+
+        refhash = myhash(uniquestring) # hash for this control
         # in some cases there may be more than one  for in and out
         # however these may be only for the lipidomics project.  If required
         # the data type could be arrays instead of integers
@@ -168,7 +175,12 @@ def parseResnet(xml):
           else:
             print('*****  unknown link type found:', ty)
 
-        ref = makeref()
+        uniquestring  = str((inref, outref, inoutref)) + str(random.random()) # unique string for this control
+        # tried using xml of the control for this snippet but generating the XML is very slow.
+        refhash = myhash(uniquestring) # hash for this control
+        # in some cases there may be more than one  for in and out
+        # however these may be only for the lipidomics project.  If required
+        # the data type could be arrays instead of integers
         setavalue = False # marked true if any attributes are found
         localrefs = []
 
@@ -191,12 +203,9 @@ def parseResnet(xml):
                     # expand list to fit index
                     if idx > len(localrefs):
                          for x in range(idx - len(localrefs)):
-                            localrefs.append(makeref())
+                            localrefs.append(makeref(refhash))
 
                     ref = localrefs[idx-1]
-                    ref[0] = refhash  # set the id
-                    # use this mechanism instead of dict to
-                    # insure the order
                     ref[refmap[name]] = value  
                     localrefs[idx-1] = ref
                     setavalue = True
@@ -350,6 +359,6 @@ def main():
 
     fname = sys.argv[1]
     readfile(fname) 
-    create_tables.create()
+    create_tables.load()
 
 main()

@@ -151,7 +151,7 @@ def parseResnet(xml):
         relationship = ''
         mechanism = ''
         effect = ''
-        rhash = myhash(item.tostring()) # hash for this control
+        rhash = myhash(ET.tostring(item, encoding='utf-8').decode()) # hash for this control
 
         # in some cases there may be more than one item for in and out
         # however these may be only for the lipidomics project.  If required
@@ -225,7 +225,7 @@ def parseResnet(xml):
         # end of this control
         #     
         # use the absolute references for hash, not 'local' to enable combining unique controls
-        chash = myhash(str((inref, inoutref, outref, rhash)))
+        chash = myhash(str((inref, inoutref, outref, controlType, ontology, relationship, effect, mechanism)))
         c = (chash, inref, inoutref, outref, controlType, ontology, relationship, effect, mechanism, rhash)
 
         controlHashes.append(chash)
@@ -353,6 +353,6 @@ def main():
 
     fname = sys.argv[1]
     readfile(fname) 
-    #create_tables.create()
+    create_tables.create()
 
 main()

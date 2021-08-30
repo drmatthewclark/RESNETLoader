@@ -12,17 +12,17 @@ class CachingWriter:
         self.dupsskipped = 0
         self.DELIMITER =  '\x07'  
         self.QUOTE     =  '\x01' 
-        self.MAXSIZE  = 20000000 # max size
+        self.MAXSIZE  = 30000000 # max size
         self.name = name
         self.fields = 0
-        self.docache = docache 
+        self.docache = docache  # boolean
 
     def stats(self):
         print(self.name, 'cache name')
         print(self.callcount, 'calls')
         print(self.writecount,'records written')
         print(self.dupsskipped, 'records skipped')
-        if len(self.cache) > 0:
+        if self.docache and len(self.cache) > 0:
             maxdup = max(self.cache.values())
             print(maxdup, 'max duplicates of a single record')
         print('')
@@ -35,8 +35,7 @@ class CachingWriter:
             self.writedb(i,f)
             return
 
-
-        idx = i[0]
+        idx = int(i[0])  # requires this to be an integer
         if idx in self.cache:
             # count how many times cache items were re-used
             count = self.cache[idx] + 1
@@ -60,7 +59,7 @@ class CachingWriter:
         cache2 = {}
         for (key, item) in self.cache.items():
             # randomlly remove half of the cache lines that have not been duplicated
-            if item > 0  or random.random() < 0.5:
+            if item == 0 and random.random() < 0.5:
                cache2[key] = item 
            
         self.cache.clear() 

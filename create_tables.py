@@ -78,14 +78,13 @@ def indexdb():
     with conn.cursor() as cur:
         cur.execute(sql)
     conn.commit()    
-
     conn.close()
 
 
 def load():
 
-    """ load tables.  the only feasible way for tables this large is ti  use the copy command"""
-    copycmd = "psql -c \"\copy resnet.xxxx from 'xxxx.table.dedup' with (delimiter E'\x07' ,format csv, quote E'\x01')\""
+    """ load tables.  the only feasible way for tables this large is so use the copy command"""
+    copycmd = "psql -c \"\copy resnet.xxxx from 'xxxx.table' with (delimiter E'\x07' ,format csv, quote E'\x01')\""
 
     initdb()
 
@@ -97,16 +96,3 @@ def load():
     indexdb()
 
 
-def create(): 
-
-    for t in tables:
-        if t != 'reference':   # skip deduplicating this table
-            dedup(t + ".table")
-
-    # create .dedup version of the table
-    os.system('ln -s  reference.table reference.table.dedup')
-    print('done deduplicating')
-
-    load()
-
-create()

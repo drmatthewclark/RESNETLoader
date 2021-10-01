@@ -62,7 +62,7 @@ def parseVersion(xml):
     """ write version records to version table """
     sql = 'insert into resnet.version (name,value) values (%s,%s);'
     doc = ElementTree(ET.fromstring(xml))
-    with open('version','w') as f:
+    with open('version.table','w') as f:
         h = doc.findall('.//attr')
         for hitem in h:
             name = hitem.get('name')
@@ -77,7 +77,7 @@ def indexAttribute(item):
     value = item.get('value')
     index = item.get('index')
     
-    hcode = myhash(name + '|' + value + '|' + str(index))
+    hcode = myhash(name + '|' + value)
     val = (hcode, name, value, index)
     return val 
 
@@ -134,9 +134,9 @@ def parseResnet(xml):
             elif val[1] ==  'NodeType':
                 nodeType = val[2]
             else:
-                attributes.append(val)
-                hcode = val[0]
-                nodeRef.append(hcode)
+                hcode1, name1, value1, index1 = val 
+                attributes.append( (hcode1, name1, value1) )
+                nodeRef.append(hcode1)
 
         node = (nodehash, urn, nodeName, nodeType, nodeRef )
         nodes.append(node)
@@ -281,6 +281,7 @@ refcache = CachingWriter('reference', False) # no caching
 nodecache = CachingWriter('node')
 pathcache = CachingWriter('pathway')
 
+    
 def precord(record):
     """ parse record and create db records """
 
@@ -290,7 +291,7 @@ def precord(record):
         for i in controls:
             controlcache.write(i, f)
 
-    with open('references.table', 'a') as f:  # references is an array of arrays
+    with open('reference.table', 'a') as f:  # references is an array of arrays
         for i in references:
             refcache.write(i, f)
 
@@ -352,6 +353,6 @@ def main():
 
     fname = sys.argv[1]
     readfile(fname) 
-    #create_tables.create()
+    create_tables.load()
 
 main()

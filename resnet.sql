@@ -1,11 +1,3 @@
-/*
-index tables, and add some denormalized fields to the relationship 
-to make searching easier
-
-
-*/
-
-
 set search_path to resnet;
 
 alter table resnet.control add PRIMARY KEY(id);

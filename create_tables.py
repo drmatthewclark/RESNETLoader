@@ -14,16 +14,20 @@ import sys
 import fileinput
 import os
 
-tables = ['node', 'control', 'pathway', 'attr', 'reference' , 'version' ]
-dedupcmd = "sort -T `pwd` -t $'\x07' -k 1  -u xxxx  > yyyy"
+tables = ['node', 'control', 'pathway', 'attr' ]
+
+dedupcmd = "sort -T `pwd` --field-separator=$\'\\x07\' --key=1,1 -u xxxx_temp  > xxxx.dedup;  rm xxxx_temp"
+reversecmd = "tac xxxx  > xxxx_temp"
 
 def dedup(fname):
 
-    output = fname + '.dedup'
-    print('deduplicating',fname,'to', output)
-    lcmd = re.sub('xxxx',fname,dedupcmd)
-    lcmd = re.sub('yyyy', output, lcmd)
+    print('deduplicating',fname)
+    lcmd = re.sub('xxxx', fname, dedupcmd)
+    rev  = re.sub('xxxx', fname, reversecmd)
 
+    print(rev)
+    os.system(rev)
+    print(lcmd)
     os.system(lcmd)
 
 
@@ -35,7 +39,7 @@ def initdb():
     sql = """
     create schema resnet;
     create table resnet.version(name text, value text);
-    create table resnet.attr( id bigint, name text, value text, index integer);
+    create table resnet.attr( id bigint, name text, value text);
     create table resnet.node( id bigint, urn text, name text, nodetype text, attributes bigint[]);
 
     create table resnet.control(id bigint, inkey bigint[], inoutkey bigint[], outkey bigint[], controltype text,
@@ -62,8 +66,11 @@ def initdb():
         conn.commit() 
 
     with conn.cursor() as cur:
-        cur.execute(sql)
-        conn.commit()
+        for line in sql.split(';'):
+           if line.strip() != '':
+              print(line)
+              cur.execute(line)
+              conn.commit()
 
 
 def indexdb():
@@ -76,8 +83,12 @@ def indexdb():
     conn = psql.connect(dbname=dbname)
 
     with conn.cursor() as cur:
-        cur.execute(sql)
-    conn.commit()    
+        statements = sql.split(';')
+        for statement in statements:
+            if statement.strip() != '':
+                print(statement)
+                cur.execute(statement)
+                conn.commit()    
 
     conn.close()
 
@@ -85,28 +96,28 @@ def indexdb():
 def load():
 
     """ load tables.  the only feasible way for tables this large is ti  use the copy command"""
-    copycmd = "psql -c \"\copy resnet.xxxx from 'xxxx.table.dedup' with (delimiter E'\x07' ,format csv, quote E'\x01')\""
+    copycmd1 = "psql -c \"\copy resnet.xxxx from 'xxxx.table.dedup' with (delimiter E'\x07' ,format csv, quote E'\x01')\""
+    copycmd2 = "psql -c \"\copy resnet.xxxx from 'xxxx.table' with (delimiter E'\x07' ,format csv, quote E'\x01')\""
 
     initdb()
 
     for t in tables:
-        print('loading table', t)
-        cmd = re.sub("xxxx",t,copycmd)
+        dedup(t + ".table" )
+
+    for t2 in tables:
+        print('loading table', t2)
+        cmd = re.sub("xxxx",t2,copycmd1)
+        print(cmd)
         os.system(cmd)
 
+    for t2 in ['reference', 'version' ]:
+        print('loading table', t2)
+        cmd = re.sub("xxxx",t2,copycmd2)
+        print(cmd)
+        os.system(cmd)
+    
     indexdb()
 
 
-def create(): 
 
-    for t in tables:
-        if t != 'reference':   # skip deduplicating this table
-            dedup(t + ".table")
-
-    # create .dedup version of the table
-    os.system('ln -s  reference.table reference.table.dedup')
-    print('done deduplicating')
-
-    load()
-
-create()
+load()

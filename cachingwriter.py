@@ -2,6 +2,7 @@
 #
 import re
 import random
+import sys
 
 class CachingWriter:
 
@@ -22,58 +23,44 @@ class CachingWriter:
         print(self.callcount, 'calls')
         print(self.writecount,'records written')
         print(self.dupsskipped, 'records skipped')
-        maxdup = max(self.cache.values())
+        maxdup = 0
+        if self.docache:
+            maxdup = max(self.cache.values())
         print(maxdup, 'max duplicates of a single record')
         print('')
 
-    def write(self, i, f):
+
+    def tsize(self, thing):
+        result = 0
+        for t in thing:
+            result += sys.getsizeof(t)
+
+        return result
+         
+    def write(self, data, f):
 
         self.callcount += 1
 
         if not self.docache:
-            self.writedb(i,f)
+            self.writedb(data, f)
             return
 
+        idx = data[0]
+        this_size = self.tsize(data)
 
-        idx = i[0]
         if idx in self.cache:
             # count how many times cache items were re-used
-            count = self.cache[idx] + 1
-            self.cache[idx] = count
-            self.dupsskipped += 1
-            return
-        else:
-            self.cache[idx] = 0
-            self.writedb(i,f)
-
-        if len(self.cache) > self.MAXSIZE and self.callcount % 500000 == 0:
-            self.prunecache()
-
-    def prunecache(self):
-        # prune unused keys to make room
+            old_size = self.cache[idx]
+            if this_size <= old_size:
+              self.dupsskipped += 1
+              return
         
-        dictsize = len(self.cache)
-        print(self.name, 'trimming cache', self.dupsskipped, 
-          'dups skipped, cache size:', dictsize)
-
-        cache2 = {}
-        for (key, item) in self.cache.items():
-            # randomlly remove half of the cache lines that have not been duplicated
-            if item > 0  or random.random() < 0.5:
-               cache2[key] = item 
-           
-        self.cache.clear() 
-        self.cache = cache2
-        newsize = len(cache2)
-        diff = dictsize - newsize
-        print(self.name, 'removed ', diff, 'entries', len(self.cache), 'remain')
-        self.stats()
-
-        if newsize/self.MAXSIZE  > 0.80:
-            self.MAXSIZE *= 1.1
+        self.cache[idx] = this_size
+        self.writedb(data, f)
 
 
-    def writedb(self,data, f):
+
+    def writedb(self, data, f):
         """ write a record the database file """
         self.writecount += 1
         d = ''

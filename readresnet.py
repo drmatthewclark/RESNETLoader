@@ -119,7 +119,9 @@ def parseResnet(xml):
             val = indexAttribute(attr)
             resnetHashes.append(val[0])
             # keep those attributes connected to resnet properties
-            resnetAttributes.append(val)
+
+            hcode1, name1, value1, index1 = val 
+            resnetAttributes.append( (hcode1, name1, value1) )
         # add to list to store in attr table    
         attributes += resnetAttributes 
 

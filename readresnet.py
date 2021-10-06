@@ -14,7 +14,7 @@ from timeit import default_timer as timer
 from datetime import timedelta
 from cachingwriter import CachingWriter
 import traceback
-
+import random
 
 #import create_tables
 
@@ -24,9 +24,11 @@ xmlheader = '<?xml version="1.0" encoding="UTF-8" standalone="no" ?>\n'
 linesread = 0
 # total lines in current release
 totalines = 1206676587
+# reproducible seed
+random.seed('resnetloader')
 
 # fields in reference table
-refitems = ['id', 'Authors', 'BiomarkerType', 'CellLineName', 'CellObject', 'CellType', 'ChangeType', 'Collaborator', 'Company', 'Condition', 'DOI',
+refcolumns  = ['id', 'Authors', 'BiomarkerType', 'CellLineName', 'CellObject', 'CellType', 'ChangeType', 'Collaborator', 'Company', 'Condition', 'DOI',
 'EMBASE', 'ESSN', 'Experimental System', 'Intervention', 'ISSN', 'Journal', 'MedlineTA', 'Mode of Action', 'mref','msrc',
 'NCT ID', 'Organ', 'Organism', 'Percent', 'Phase', 'Phenotype', 'PII', 'PMID', 'PubVersion', 'PubYear', 'PUI',
 'pX', 'QuantitativeType', 'Source', 'Start', 'StudyType', 'TextMods', 'TextRef', 'Tissue', 'Title', 'TrialStatus', 'URL']
@@ -36,26 +38,30 @@ refitems = ['id', 'Authors', 'BiomarkerType', 'CellLineName', 'CellObject', 'Cel
 def makerefmap():
     result = {}
     count = 0
-    for item in refitems:
-        result[item] = count
+    for ref in refcolumns:
+        result[ref] = count
         count += 1
 
     return result
 
-# make reference array
-def makeref():
-    return ['']*len(refitems)
+# make reference array, return an array
+def makeref(refhash):
+    result = ['']*len(refcolumns)
+    result[0] = refhash
+    return result
 
 # return an array in the "correct" order from the
 # reference dictionary
 def dictToArray(dic):
     result = []
-    for i in refitems:
-        item = dic[i]
-        result.append(item)
+    for i in refcolumns:
+        ref = dic[i]
+        result.append(ref)
 
     return result        
 
+
+# refmap is map of reference items a map of item, index in array
 refmap = makerefmap()
 
 def parseVersion(xml):
@@ -64,18 +70,18 @@ def parseVersion(xml):
     doc = ElementTree(ET.fromstring(xml))
     with open('version.table','w') as f:
         h = doc.findall('.//attr')
-        for hitem in h:
-            name = hitem.get('name')
-            value = hitem.get('value')
+        for h in h:
+            name = h.get('name')
+            value = h.get('value')
             val = (name, value)
             print ( 'name:%s\tval:%s' % val )
             versioncache.write(val, f) 
     
-def indexAttribute(item):
-
-    name = item.get('name')
-    value = item.get('value')
-    index = item.get('index')
+def indexAttribute(attr):
+    # attr is an XML document
+    name  = attr.get('name')
+    value = attr.get('value')
+    index = attr.get('index')
     
     hcode = myhash(name + '|' + value)
     val = (hcode, name, value, index)
@@ -108,9 +114,9 @@ def parseResnet(xml):
             
         rurn = e.get('urn')
         resnetHashes = []
-        rhash = myhash(str((rname, rtyp, rurn)))
-        for item in doc.findall('./properties/attr'):
-            val = indexAttribute(item)
+
+        for attr in doc.findall('./properties/attr'):
+            val = indexAttribute(attr)
             resnetHashes.append(val[0])
             # keep those attributes connected to resnet properties
             resnetAttributes.append(val)
@@ -118,17 +124,17 @@ def parseResnet(xml):
         attributes += resnetAttributes 
 
     nodeLocalId = {}
-    for item in doc.findall('./nodes/node'): # node
+    for node in doc.findall('./nodes/node'): # node
         nodeRef = []
-        urn = item.get('urn')
-        local_id = item.get('local_id')
+        urn = node.get('urn')
+        local_id = node.get('local_id')
         nodehash = myhash(urn)
         nodeLocalId[local_id] = nodehash
         nodeName = ''
         nodeType = ''
 
-        for hitem in item.findall('./attr'):
-            val = indexAttribute(hitem)
+        for nodeattr in node.findall('./attr'):
+            val = indexAttribute(nodeattr)
             if val[1] ==  'Name':
                 nodeName = val[2]
             elif val[1] ==  'NodeType':
@@ -138,11 +144,12 @@ def parseResnet(xml):
                 attributes.append( (hcode1, name1, value1) )
                 nodeRef.append(hcode1)
 
-        node = (nodehash, urn, nodeName, nodeType, nodeRef )
-        nodes.append(node)
+        thisnode = (nodehash, urn, nodeName, nodeType, nodeRef )
+        nodes.append(thisnode)
+
 
     controlHashes = []
-    for item in doc.findall('./controls/control'): # controls
+    for control in doc.findall('./controls/control'): # controls
         inref = []
         outref = []
         inoutref = []
@@ -151,12 +158,12 @@ def parseResnet(xml):
         relationship = ''
         mechanism = ''
         effect = ''
-        # in some cases there may be more than one item for in and out
-        # however these may be only for the lipidomics project.  If required
-        # the data type could be arrays instead of integers
-        for fitem in item.findall('./link'): # links
-          ref = fitem.get('ref')
-          ty =  fitem.get('type')
+        refhash = ''
+
+        for controllink in control.findall('./link'): # links
+          ref = controllink.get('ref')
+          ty =  controllink.get('type')
+
           if ty == 'in':
             inref.append(nodeLocalId[ref])
           elif ty == 'out':
@@ -164,16 +171,19 @@ def parseResnet(xml):
           elif ty == 'in-out':
             inoutref.append(nodeLocalId[ref])
           else:
-            print('*****  unknown link type:', ty)
+            print('*****  unknown link type found:', ty)
 
-        ref = makeref()
-        setavalue = False
-        rhash = myhash(str(item)) # hash for this control
+        uniquestring  = str((inref, outref, inoutref)) + str(random.random()) # unique string for this control
+        # tried using xml of the control for this snippet but generating the XML is very slow.
+        refhash = myhash(uniquestring) # hash for this control
+        # in some cases there may be more than one  for in and out
+        # however these may be only for the lipidomics project.  If required
+        # the data type could be arrays instead of integers
         localrefs = []
 
-        for gitem in item.findall('./attr'): #attributes of the control
-            hcode, name, value, index = indexAttribute(gitem)
-
+        for controlattr in control.findall('./attr'): #attributes of the control
+            hcode, name, value, index = indexAttribute(controlattr)
+            # these are specific to the control, and not to any indivitual references
             if name ==  'ControlType':
                 controlType = value
             elif name ==  'Ontology':
@@ -186,53 +196,45 @@ def parseResnet(xml):
                 mechanism = value
             else:
                 try:
-                    if index is not None:
-                        idx = int(index)
-                    else:
-                        idx = 1 # pretend we have one if missing, which happens when there
-                                # is only 1 reference in some cases
-
+                    idx = int(index) # index is an attribute of the control that says which reference
+                                     # it belongs to
+                    # expand list to fit index
                     if idx > len(localrefs):
                          for x in range(idx - len(localrefs)):
-                            localrefs.append(makeref())
+                            ref_array = makeref(refhash) # array of items for the source reference
+                                                   # refhash is the hash id for this relationship
+                            localrefs.append(ref_array)  # add to list of references for this relationship
 
-                    ref = localrefs[idx-1]
-                    ref[0] = rhash
-                    # use this mechanism instead of dict to
-                    # insure the order
-                    ref[refmap[name]] = value  
-                    localrefs[idx-1] = ref
-                    setavalue = True
+                    xref = localrefs[idx-1]  # get the relevant ref; idx is 1 based, ref is 0 based. 
+                    xref[refmap[name]] = value  
+
                 except Exception as e:
                     traceback.print_exc()
                     print('error', e)
                     print('error',hcode, name, value, index, localrefs )
             
         # end of loop over attributes 
-        #assign non-unique hashes for items 
+        #assign non-unique hashes for s 
         # now localrefs is an array of arrays, where we we need an array of tuples
         # 
-        for i,xitem in enumerate(localrefs):
-            localrefs[i] = tuple(xitem)
+        for i,x in enumerate(localrefs):
+            localrefs[i] = tuple(x)
 
-        if  setavalue: 
-            for xitem in localrefs:
-                references.append(xitem)
-        else:
-            rhash = ''
+        for x in localrefs:
+            references.append(x)
 
         # end of this control
         #     
         # use the absolute references for hash, not 'local' to enable combining unique controls
-        chash = myhash(str((inref, inoutref, outref, rhash)))
-        c = (chash, inref, inoutref, outref, controlType, ontology, relationship, effect, mechanism, rhash)
+        chash = myhash(str((inref, inoutref, outref, controlType, ontology, relationship, effect, mechanism)))
+        c = (chash, inref, inoutref, outref, controlType, ontology, relationship, effect, mechanism, refhash)
 
         controlHashes.append(chash)
         controls.append(c)
 
     # end of loop over controls
     if isPath:
-        phash = myhash( str((rhash, rname, rtyp, rurn, resnetHashes, controlHashes)) )
+        phash = myhash( str((refhash, rname, rtyp, rurn, resnetHashes, controlHashes)) )
         p  = (phash, rname, rtyp, rurn, resnetHashes, controlHashes)
         pathways.append(p)
 
@@ -315,12 +317,14 @@ def readnode(f):
     counter = 0
     result = xmlheader
     ok = False
+    LINES = 1000000 # lines between status updates
+
     for line in f:
         linesread += 1
         if line is None:
             return None
 
-        if linesread % 500000 == 0:
+        if linesread % LINES == 0:
             elapsed = timer() - start
             fractiondone = linesread/totalines
             totaltime = (elapsed*totalines/linesread)
@@ -354,5 +358,6 @@ def main():
     fname = sys.argv[1]
     readfile(fname) 
     create_tables.load()
+
 
 main()

@@ -13,10 +13,10 @@ class CachingWriter:
         self.dupsskipped = 0
         self.DELIMITER =  '\x07'  
         self.QUOTE     =  '\x01' 
-        self.MAXSIZE  = 20000000 # max size
+        self.MAXSIZE  = 30000000 # max size
         self.name = name
         self.fields = 0
-        self.docache = docache 
+        self.docache = docache  # boolean
 
     def stats(self):
         print(self.name, 'cache name')
@@ -30,13 +30,16 @@ class CachingWriter:
         print('')
 
 
+
     def tsize(self, thing):
         result = 0
         for t in thing:
             result += sys.getsizeof(t)
 
         return result
-         
+ 
+
+ 
     def write(self, data, f):
 
         self.callcount += 1
@@ -45,19 +48,18 @@ class CachingWriter:
             self.writedb(data, f)
             return
 
-        idx = data[0]
+        idx = int(data[0])
         this_size = self.tsize(data)
 
         if idx in self.cache:
-            # count how many times cache items were re-used
+           #  check to see if this is larger than last time
             old_size = self.cache[idx]
-            if this_size <= old_size:
+            if this_size <= old_size: # if smaller, skip it
               self.dupsskipped += 1
               return
         
         self.cache[idx] = this_size
         self.writedb(data, f)
-
 
 
     def writedb(self, data, f):

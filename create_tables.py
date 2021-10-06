@@ -83,31 +83,24 @@ def indexdb():
     conn = psql.connect(dbname=dbname)
 
     with conn.cursor() as cur:
-<<<<<<< HEAD
         statements = sql.split(';')
         for statement in statements:
-            if statement.strip() != '':
+            if statement.strip() != '' and not statement.startswith('--'):
                 print(statement)
                 cur.execute(statement)
                 conn.commit()    
 
-=======
         cur.execute(sql)
     conn.commit()    
->>>>>>> 19222a40496302ce683fe10358e229f21034ed3c
     conn.close()
 
 
 def load():
 
-<<<<<<< HEAD
     """ load tables.  the only feasible way for tables this large is ti  use the copy command"""
+
     copycmd1 = "psql -c \"\copy resnet.xxxx from 'xxxx.table.dedup' with (delimiter E'\x07' ,format csv, quote E'\x01')\""
     copycmd2 = "psql -c \"\copy resnet.xxxx from 'xxxx.table' with (delimiter E'\x07' ,format csv, quote E'\x01')\""
-=======
-    """ load tables.  the only feasible way for tables this large is so use the copy command"""
-    copycmd = "psql -c \"\copy resnet.xxxx from 'xxxx.table' with (delimiter E'\x07' ,format csv, quote E'\x01')\""
->>>>>>> 19222a40496302ce683fe10358e229f21034ed3c
 
     initdb()
 
@@ -128,9 +121,3 @@ def load():
     
     indexdb()
 
-
-<<<<<<< HEAD
-
-load()
-=======
->>>>>>> 19222a40496302ce683fe10358e229f21034ed3c

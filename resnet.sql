@@ -49,3 +49,6 @@ create index on resnet.control(mechanism);
 create index on resnet.control(inname);
 create index on resnet.control(outname);
 create index on resnet.control(inoutname);
+alter table resnet.control add column num_refs integer;
+
+update resnet.control set num_refs = count from (select count(reference.id) as count, control.id from resnet.reference, resnet.control  where reference.id = control.attributes group by control.id)a  where a.id= control.id;

@@ -90,7 +90,6 @@ def indexdb():
                 cur.execute(statement)
                 conn.commit()    
 
-        cur.execute(sql)
     conn.commit()    
     conn.close()
 
@@ -121,3 +120,4 @@ def load():
     
     indexdb()
 
+load()

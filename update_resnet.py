@@ -28,6 +28,23 @@ def printlist(mlist):
     for i in mlist:
         print(i)
 
+def checkthisupdate(latest_date):
+    """ check to see if this update has alrady been added"""
+
+    thisrec = ('update', str(latest_date))
+        
+    conn = getConnection()
+    with conn.cursor() as cur:
+        cur.execute('select name, value from resnet.version where name = %s and value = %s', thisrec)
+        rec = cur.fetchone() 
+        if rec == thisrec:
+            print(thisrec, 'already processed' )
+            exit()
+        
+        cur.execute('insert into resnet.version (name, value) values(%s, %s);', thisrec)
+        conn.commit()
+    conn.close()
+
 
 # mammal-update-20211002-Viruses.rnef.zip
 filelist = runcmd(cmd)
@@ -59,7 +76,9 @@ for item in filelist:
 
 #-------------------------------------------------------
 print('latest update', latest_date)
-        
+
+checkthisupdate(latest_date)  # exit if already present
+
 latest = database[str(latest_date)]
 
 for i in latest:
@@ -74,6 +93,7 @@ for i in latest:
     os.remove(i)
     msg = runcmd(pdir + '/readresnet.py ' + i[:-4] + ' False')
     printlist(msg)
+
 
 print('---')
 msg = runcmd(pdir + '/create_tables.py  resnet_temp')

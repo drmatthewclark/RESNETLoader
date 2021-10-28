@@ -8,6 +8,7 @@ from datetime import date
 import datetime
 import zipfile
 from dbconnect import getConnection
+from dbconnect import psql_cmd
 
 dates = re.compile('2021[0-9]*') # 2021 records
 cmd='aws --profile resnet s3 ls s3://psweb-data-updates/mammal/resnet16/'
@@ -109,9 +110,9 @@ from
 where 
   a.id= control.id;"""
 
-msg = dbconnect.psql_cmd(update_nref)
+msg = psql_cmd(update_nref)
 print(msg)
 
-msg = dbconnect.psql_cmd('drop schema resnet_temp cascade')
+msg = psql_cmd('drop schema resnet_temp cascade')
 print(msg)
 

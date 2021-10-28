@@ -100,4 +100,18 @@ msg = runcmd(pdir + '/create_tables.py  resnet_temp')
 printlist(msg)
 
 
+update_nref = """update resnet.control 
+  set num_refs = count 
+from
+(select count(reference.id) as count, control.id 
+   from resnet.reference, resnet.control 
+   where reference.id = control.attributes group by control.id)a  
+where 
+  a.id= control.id;"""
+
+msg = dbconnect.psql_cmd(update_nref)
+print(msg)
+
+msg = dbconnect.psql_cmd('drop schema resnet_temp cascade')
+print(msg)
 

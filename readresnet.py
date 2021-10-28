@@ -26,6 +26,7 @@ linesread = 0
 totalines = 1206676587
 # reproducible seed
 random.seed('resnetloader')
+readversion = True
 
 # fields in reference table
 refcolumns  = ['id', 'Authors', 'BiomarkerType', 'CellLineName', 'CellObject', 'CellType', 'ChangeType', 'Collaborator', 'Company', 'Condition', 'DOI',
@@ -151,6 +152,7 @@ def parseResnet(xml):
 
 
     controlHashes = []
+
     for control in doc.findall('./controls/control'): # controls
         inref = []
         outref = []
@@ -160,7 +162,6 @@ def parseResnet(xml):
         relationship = ''
         mechanism = ''
         effect = ''
-        refhash = ''
 
         for controllink in control.findall('./link'): # links
           ref = controllink.get('ref')
@@ -175,9 +176,9 @@ def parseResnet(xml):
           else:
             print('*****  unknown link type found:', ty)
 
-        uniquestring  = str((inref, outref, inoutref)) + str(random.random()) # unique string for this control
+        #refhash = myhash( str(inref, outref, inoutref) + str(random.random())
+        refhash = -1
         # tried using xml of the control for this snippet but generating the XML is very slow.
-        refhash = myhash(uniquestring) # hash for this control
         # in some cases there may be more than one  for in and out
         # however these may be only for the lipidomics project.  If required
         # the data type could be arrays instead of integers
@@ -198,6 +199,9 @@ def parseResnet(xml):
                 mechanism = value
             else:
                 try:
+                    if index is None:
+                        index = 1
+
                     idx = int(index) # index is an attribute of the control that says which reference
                                      # it belongs to
                     # expand list to fit index
@@ -211,15 +215,19 @@ def parseResnet(xml):
                     xref[refmap[name]] = value  
 
                 except Exception as e:
-                    traceback.print_exc()
-                    print('error', e)
+                    #pass
+                    #traceback.print_exc()
                     print('error',hcode, name, value, index, localrefs )
             
         # end of loop over attributes 
+        # use the absolute references for hash, not 'local' to enable combining unique controls
+        chash = myhash(str((inref, inoutref, outref, controlType, ontology, relationship, effect, mechanism)))
+        c = (chash, inref, inoutref, outref, controlType, ontology, relationship, effect, mechanism, chash)
         #assign non-unique hashes for s 
         # now localrefs is an array of arrays, where we we need an array of tuples
         # 
         for i,x in enumerate(localrefs):
+            x[0] = chash
             localrefs[i] = tuple(x)
 
         for x in localrefs:
@@ -228,8 +236,6 @@ def parseResnet(xml):
         # end of this control
         #     
         # use the absolute references for hash, not 'local' to enable combining unique controls
-        chash = myhash(str((inref, inoutref, outref, controlType, ontology, relationship, effect, mechanism)))
-        c = (chash, inref, inoutref, outref, controlType, ontology, relationship, effect, mechanism, refhash)
 
         controlHashes.append(chash)
         controls.append(c)
@@ -249,20 +255,22 @@ def readfile(fname):
 
     global linesread
     print('\nreading file', fname)
-    print('version info:')
 
     count = 0
     with open(fname,'r') as f:
-        version = ''
-        for line in f:
-            linesread += 1
-            version += line
-            if  "</properties>" in line:
-                break
-        version += "</batch>"
-        parseVersion(version)
 
-        print('\n')
+        if readversion:
+            print('version info:')
+            version = ''
+            for line in f:
+                linesread += 1
+                version += line
+                if  "</properties>" in line:
+                    break
+            version += "</batch>"
+            parseVersion(version)
+    
+            print('\n')
 
         while True:
             count += 1
@@ -356,10 +364,14 @@ start = timer()
 
 
 def main(): 
-
+    global readversion
     fname = sys.argv[1]
+    if len(sys.argv) > 2 and len(sys.argv[2]) > 0:
+        char = (sys.argv[2].lower())[0]
+        readversion = char in ('t', '1' ) 
+        print('readversion set to:', readversion)
+
     readfile(fname) 
-    create_tables.load()
 
 
 main()

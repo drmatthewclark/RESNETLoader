@@ -23,10 +23,6 @@ class CachingWriter:
         print(self.callcount, 'calls')
         print(self.writecount,'records written')
         print(self.dupsskipped, 'records skipped')
-        maxdup = 0
-        if self.docache:
-            maxdup = max(self.cache.values())
-        print(maxdup, 'max duplicates of a single record')
         print('')
 
 

@@ -1,14 +1,7 @@
 import psycopg2 as psql
 import os
 from subprocess import check_output
-
-host = 'localhost'
-user = 'mclark'
-password = ''
-dbase = 'mclark'
-
-
-dbname='mclark'
+from credentials import *   # database credentials
 
 def getConnection():
     conn = psql.connect(dbname=dbase, user=user, password=password, host=host)

@@ -16,6 +16,7 @@ import os
 import dbconnect
 import subprocess
 from dbconnect import getConnection
+from dbconnect import psql_cmd
 
 tables = ['node', 'control', 'pathway', 'attr' ]
 
@@ -137,8 +138,8 @@ def load():
 
     """ load tables.  the only feasible way for tables this large is ti  use the copy command"""
 
-    copycmd1 = "psql -c \"\copy " + schema + ".xxxx from 'xxxx.table.dedup' with (delimiter E'\x07' ,format csv, quote E'\x01')\""
-    copycmd2 = "psql -c \"\copy " + schema + ".xxxx from 'xxxx.table' with (delimiter E'\x07' ,format csv, quote E'\x01')\""
+    copycmd1 = "\copy " + schema + ".xxxx from 'xxxx.table.dedup' with (delimiter E'\x07' ,format csv, quote E'\x01')"
+    copycmd2 = "\copy " + schema + ".xxxx from 'xxxx.table' with (delimiter E'\x07' ,format csv, quote E'\x01')"
 
     initdb()
 
@@ -148,17 +149,20 @@ def load():
     for t2 in tables:
         print('loading table', t2)
         cmd = re.sub("xxxx",t2,copycmd1)
-        print(runcmd(cmd))
+        print(psql_cmd(cmd))
 
     for t2 in ['reference', 'version' ]:
-        print('loading table', t2)
-        cmd = re.sub("xxxx",t2,copycmd2)
-        print(cmd)
-        print(runcmd(cmd))
-    
+        if os.path.exists(t2 + '.table'):
+            print('loading table', t2)
+            cmd = re.sub("xxxx",t2,copycmd2)
+            print(cmd)
+            print(psql_cmd(cmd))
+   
+    print('starting indexing')
     indexdb()
 
     #combine update with full tables 
+    print('merging tables')
     if 'temp' in schema:
         combine_temp()
 

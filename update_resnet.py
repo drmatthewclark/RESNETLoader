@@ -12,7 +12,7 @@ from dbconnect import psql_cmd
 
 dates = re.compile('2021[0-9]*') # 2021 records
 cmd='aws --profile resnet s3 ls s3://psweb-data-updates/mammal/resnet16/'
-downloadcmd='aws --profile resnet s3 cp s3://psweb-data-updates/mammal/resnet16/xxxx  .'
+downloadcmd='aws --profile resnet s3 cp s3://psweb-data-updates/mammal/resnet16/xxxx  .  --no-progress'
 
 pdir = os.path.dirname(os.path.realpath(__file__)) # dir of this program
 

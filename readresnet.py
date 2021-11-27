@@ -29,10 +29,14 @@ random.seed('resnetloader')
 readversion = True
 
 # fields in reference table
-refcolumns  = ['id', 'Authors', 'BiomarkerType', 'CellLineName', 'CellObject', 'CellType', 'ChangeType', 'Collaborator', 'Company', 'Condition', 'DOI',
-'EMBASE', 'ESSN', 'Experimental System', 'Intervention', 'ISSN', 'Journal', 'MedlineTA', 'Mode of Action', 'mref','msrc',
-'NCT ID', 'Organ', 'Organism', 'Percent', 'Phase', 'Phenotype', 'PII', 'PMID', 'PubVersion', 'PubYear', 'PUI',
-'pX', 'QuantitativeType', 'Source', 'Start', 'StudyType', 'TextMods', 'TextRef', 'Tissue', 'Title', 'TrialStatus', 'URL']
+refcolumns  = ['id', 'Authors', 'BiomarkerType', 'CellLineName', 'CellObject',
+'CellType', 'ChangeType', 'Collaborator', 'Company', 'Condition', 'DOI',
+'EMBASE', 'ESSN', 'Experimental System', 'Intervention', 'ISSN', 'Journal',
+'MedlineTA', 'Mode of Action', 'mref','msrc',
+'NCT ID', 'Organ', 'Organism', 'Percent', 'Phase', 'Phenotype', 'PII',
+'PMID', 'PubVersion', 'PubYear', 'PUI',
+'pX', 'QuantitativeType', 'Source', 'Start', 'StudyType', 'TextMods',
+'TextRef', 'Tissue', 'Title', 'TrialStatus', 'URL', 'unique_id']
 
 
 # make refmapper
@@ -228,6 +232,8 @@ def parseResnet(xml):
         # 
         for i,x in enumerate(localrefs):
             x[0] = chash
+            # unique hash of this reference
+            x[-1] = myhash(str(x)) 
             localrefs[i] = tuple(x)
 
         for x in localrefs:

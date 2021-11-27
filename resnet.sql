@@ -16,6 +16,7 @@ create index on resnet.pathway(type);
 create index on resnet.pathway(urn);
 
 
+alter table resnet.reference add PRIMARY KEY(unique_id);
 create index on resnet.reference(id);
 create index on resnet.reference(tissue);
 create index on resnet.reference(pubyear);

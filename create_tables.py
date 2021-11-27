@@ -67,10 +67,14 @@ def initdb():
     create table xxxx.pathway(id bigint, name text, type text, urn text, attributes bigint[], controls bigint[]);
 
     create table xxxx.reference ( id bigint,
-       Authors text, BiomarkerType text, CellLineName text, CellObject text, CellType text, ChangeType text, Collaborator text, Company text, Condition text,
-       DOI text, EMBASE text, ESSN text, Experimental_System text, Intervention text, ISSN text, Journal text, MedlineTA text, Mode_of_Action text,
-       mref text, msrc text, NCT_ID text, Organ text, Organism text, Percent text, Phase text, Phenotype text, PII text, PMID text, PubVersion text, PubYear integer, PUI text,
-       pX float, QuantitativeType text, Source text, Start text, StudyType text, TextMods text, TextRef text, Tissue text, Title text, TrialStatus text, URL text);
+       Authors text, BiomarkerType text, CellLineName text, CellObject text,
+       CellType text, ChangeType text, Collaborator text, Company text, Condition text,
+       DOI text, EMBASE text, ESSN text, Experimental_System text, Intervention text,
+       ISSN text, Journal text, MedlineTA text, Mode_of_Action text,
+       mref text, msrc text, NCT_ID text, Organ text, Organism text, Percent text,
+       Phase text, Phenotype text, PII text, PMID text, PubVersion text, PubYear integer, PUI text,
+       pX float, QuantitativeType text, Source text, Start text, StudyType text, TextMods text,
+       TextRef text, Tissue text, Title text, TrialStatus text, URL text, unique_id bigint);
     """
 
     sql = re.sub('xxxx', schema, sql)

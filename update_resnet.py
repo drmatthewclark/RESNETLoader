@@ -10,9 +10,9 @@ import zipfile
 from dbconnect import getConnection
 from dbconnect import psql_cmd
 
-dates = re.compile('2021[0-9]*') # 2021 records
-cmd='aws --profile resnet s3 ls s3://psweb-data-updates/mammal/resnet16/'
-downloadcmd='aws --profile resnet s3 cp s3://psweb-data-updates/mammal/resnet16/xxxx  .  --no-progress'
+dates = re.compile('2022[0-9]*') # 2021 records
+cmd='aws --profile resnet s3 ls s3://psweb-data-updates/mammal/resnet17/'
+downloadcmd='aws --profile resnet s3 cp s3://psweb-data-updates/mammal/resnet17/xxxx  .  --no-progress'
 
 pdir = os.path.dirname(os.path.realpath(__file__)) # dir of this program
 
@@ -27,7 +27,8 @@ def runcmd(cmd):
 
 def printlist(mlist):
     for i in mlist:
-        print(i)
+        #print(i)
+        pass
 
 def checkthisupdate(latest_date):
     """ check to see if this update has alrady been added"""
@@ -59,7 +60,7 @@ for item in filelist:
     elems = item.split()
     if len(elems) >= 4 :
         fname = elems[3]
-        if not '2021' in fname:
+        if not '2022' in fname:
             continue
 
         tdate = dates.findall(fname)[0]
@@ -98,7 +99,7 @@ for i in latest:
 
 print('---')
 msg = runcmd(pdir + '/create_tables.py  resnet_temp')
-printlist(msg)
+#printlist(msg)
 
 
 update_nref = """update resnet.control 
@@ -114,5 +115,5 @@ msg = psql_cmd(update_nref)
 print(msg)
 
 msg = psql_cmd('drop schema resnet_temp cascade')
-print(msg)
+#print(msg)
 

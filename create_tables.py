@@ -163,7 +163,7 @@ def load():
             print(psql_cmd(cmd))
    
     print('starting indexing')
-    indexdb()
+    #indexdb()
 
     #combine update with full tables 
     print('merging tables')

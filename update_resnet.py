@@ -30,79 +30,93 @@ def printlist(mlist):
         #print(i)
         pass
 
-def checkthisupdate(latest_date):
+def checkthisupdate(this_date):
     """ check to see if this update has alrady been added"""
-
-    thisrec = ('update', str(latest_date))
-        
+    thisrec = ('update', str(this_date))
     conn = getConnection()
     with conn.cursor() as cur:
-        cur.execute('select name, value from resnet.version where name = %s and value = %s', thisrec)
-        rec = cur.fetchone() 
-        if rec == thisrec:
-            print(thisrec, 'already processed' )
-            exit()
-        
-        cur.execute('insert into resnet.version (name, value) values(%s, %s);', thisrec)
-        conn.commit()
+        cur.execute('select name, value from resnet.version where name = %s and value::date >= %s::date', thisrec)
+        if cur.rowcount > 0:
+            return True 
+       
     conn.close()
+    return False
 
 
 # mammal-update-20211002-Viruses.rnef.zip
-filelist = runcmd(cmd)
-latest_date = date(1900,1,1)
-database = {}
 
-for item in filelist:
-    if not item.endswith('zip'):
-        continue
+def getfiles():
 
-    elems = item.split()
-    if len(elems) >= 4 :
-        fname = elems[3]
-        if not '2022' in fname:
+    database = {}
+    filelist = runcmd(cmd)
+    for item in filelist:
+    
+        if not item.endswith('zip'):
             continue
+    
+        elems = item.split()
+    
+        if len(elems) >= 4 :
+            fname = elems[3]
+            if not '2022' in fname:
+                continue
+    
+            tdate = elems[0]
+            #  2022-01-01
+            year = int(tdate[0:4])
+            month = int(tdate[5:7])
+            day = int(tdate[9:10])
+            d = date(year, month, day)
+            database[fname] = d
 
-        tdate = dates.findall(fname)[0]
-        year = int(tdate[:4])
-        month = int(tdate[4:6])
-        day = int(tdate[6:8])
-        d = date(year, month, day)
-
-        if not str(d) in database:
-            database[str(d)] = []
-
-        database[str(d)].append(fname);
-        if d > latest_date:
-            latest_date = d
-
+    # return map of filename and their file dates   
+    return database 
 #-------------------------------------------------------
-print('latest update', latest_date)
 
-checkthisupdate(latest_date)  # exit if already present
 
-latest = database[str(latest_date)]
+def process_files():
 
-for i in latest:
-    print('downloading',i)
-    cmd = re.sub('xxxx',i,downloadcmd)
-    msg = runcmd(cmd)
+    database = getfiles()
+    # set of unique dates from files
+    dates  = set(database.values())
+
+    for file in database:
+    
+        if checkthisupdate(database[file]) :  # exit if already present
+            continue
+      
+        print('downloading',file, database[file])
+        cmd = re.sub('xxxx',file,downloadcmd)
+        msg = runcmd(cmd)
+        printlist(msg)
+    
+        with zipfile.ZipFile(file, 'r') as zipp:
+            zipp.extractall('.')
+       
+        os.remove(file)
+        print('readresnet', file[:-4])
+        msg = runcmd(pdir + '/readresnet.py ' + file[:-4] + ' False')
+    
+    
+    conn = getConnection()
+    for  d  in dates:
+        with conn.cursor() as cur:
+            cur.execute('insert into resnet.version (name, value) values(%s, %s);', ('update', d) )
+        printlist(msg)
+    conn.commit()
+    conn.close
+
+
+def load_files():
+    print('--- files downloaded, loading ---')
+    msg = runcmd(pdir + '/create_tables.py  resnet_temp')
+    print('create_tables')
     printlist(msg)
 
-    with zipfile.ZipFile(i, 'r') as zipp:
-        zipp.extractall('.')
 
-    os.remove(i)
-    msg = runcmd(pdir + '/readresnet.py ' + i[:-4] + ' False')
-    printlist(msg)
-
-
-print('---')
-msg = runcmd(pdir + '/create_tables.py  resnet_temp')
-#printlist(msg)
-
-
-update_nref = """update resnet.control 
+def index():
+    update_nref = """
+update resnet.control 
   set num_refs = count 
 from
 (select count(reference.id) as count, control.id 
@@ -111,9 +125,9 @@ from
 where 
   a.id= control.id;"""
 
-msg = psql_cmd(update_nref)
-print(msg)
+    msg = psql_cmd(update_nref)
+    print(msg)
 
-msg = psql_cmd('drop schema resnet_temp cascade')
-#print(msg)
-
+process_files()
+load_files()
+index()

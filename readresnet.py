@@ -14,7 +14,7 @@ from timeit import default_timer as timer
 from datetime import timedelta
 from cachingwriter import CachingWriter
 import traceback
-import random
+import datetime
 
 #import create_tables
 
@@ -22,21 +22,20 @@ import random
 xmlheader = '<?xml version="1.0" encoding="UTF-8" standalone="no" ?>\n'
 # tracks total database writes
 linesread = 0
-# total lines in current release
-totalines = 1206676587
+# approxtotal lines in current release
+totalines = 1220073958
 # reproducible seed
-random.seed('resnetloader')
 readversion = True
 
 # fields in reference table
-refcolumns  = ['id', 'Authors', 'BiomarkerType', 'CellLineName', 'CellObject',
+refcolumns  = ['unique_id', 'Authors', 'BiomarkerType', 'CellLineName', 'CellObject',
 'CellType', 'ChangeType', 'Collaborator', 'Company', 'Condition', 'DOI',
 'EMBASE', 'ESSN', 'Experimental System', 'Intervention', 'ISSN', 'Journal',
 'MedlineTA', 'Mode of Action', 'mref','msrc',
 'NCT ID', 'Organ', 'Organism', 'Percent', 'Phase', 'Phenotype', 'PII',
 'PMID', 'PubVersion', 'PubYear', 'PUI',
 'pX', 'QuantitativeType', 'Source', 'Start', 'StudyType', 'TextMods',
-'TextRef', 'Tissue', 'Title', 'TrialStatus', 'URL', 'unique_id']
+'TextRef', 'Tissue', 'Title', 'TrialStatus', 'URL', 'id']
 
 
 # make refmapper
@@ -80,6 +79,11 @@ def parseVersion(xml):
             value = h.get('value')
             val = (name, value)
             print ( 'name:%s\tval:%s' % val )
+
+            if name == 'ReleaseDate':
+                date = datetime.datetime.strptime(value, '%B %d, %Y')
+                versioncache.write( ('update', date), f)          
+             
             versioncache.write(val, f) 
     
 def indexAttribute(attr):
@@ -231,9 +235,11 @@ def parseResnet(xml):
         # now localrefs is an array of arrays, where we we need an array of tuples
         # 
         for i,x in enumerate(localrefs):
-            x[0] = chash
+            # last data element links to control
+            x[-1] = chash
             # unique hash of this reference
-            x[-1] = myhash(str(x)) 
+            x[0] = ''
+            x[0] = myhash(str(x)) 
             localrefs[i] = tuple(x)
 
         for x in localrefs:

@@ -66,7 +66,7 @@ def initdb():
 
     create table xxxx.pathway(id bigint, name text, type text, urn text, attributes bigint[], controls bigint[]);
 
-    create table xxxx.reference ( id bigint,
+    create table xxxx.reference ( unique_id bigint,
        Authors text, BiomarkerType text, CellLineName text, CellObject text,
        CellType text, ChangeType text, Collaborator text, Company text, Condition text,
        DOI text, EMBASE text, ESSN text, Experimental_System text, Intervention text,
@@ -74,7 +74,7 @@ def initdb():
        mref text, msrc text, NCT_ID text, Organ text, Organism text, Percent text,
        Phase text, Phenotype text, PII text, PMID text, PubVersion text, PubYear integer, PUI text,
        pX float, QuantitativeType text, Source text, Start text, StudyType text, TextMods text,
-       TextRef text, Tissue text, Title text, TrialStatus text, URL text, unique_id bigint);
+       TextRef text, Tissue text, Title text, TrialStatus text, URL text, id bigint);
     """
 
     sql = re.sub('xxxx', schema, sql)
@@ -120,18 +120,20 @@ def indexdb():
 
 
 def combine_temp():
+
     """ combine temporary tables with main database """
+    print('combining tables')
     conn = getConnection()
     tables = ['attr', 'node', 'control', 'pathway', 'reference' ]
 
-    lschema = re.sub('_temp','',schema)
+    lschema = 'resnet'
 
     for table in tables:
         sql = 'insert into ' + lschema + '.' + table + ' select * from ' + schema + '.' + table + ' on conflict do nothing '
         print(sql)
         with conn.cursor() as cur:
             cur.execute(sql)
-            print(cur.rowcount, ' rows inserted ')
+            print(table, cur.rowcount, ' rows inserted ')
 
     conn.commit()
     conn.close()
@@ -163,7 +165,7 @@ def load():
             print(psql_cmd(cmd))
    
     print('starting indexing')
-    #indexdb()
+    indexdb()
 
     #combine update with full tables 
     print('merging tables')

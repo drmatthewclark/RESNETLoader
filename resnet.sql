@@ -1,30 +1,30 @@
-set search_path to resnet;
+set search_path to xxxx;
 
-alter table resnet.control add PRIMARY KEY(id);
-alter table resnet.attr add PRIMARY KEY (id);
-create index on resnet.attr(name);
-create index on resnet.attr(value);
+alter table control add PRIMARY KEY(id);
+alter table attr add PRIMARY KEY (id);
+create index on attr(name);
+create index on attr(value);
 
-alter table resnet.node add PRIMARY KEY (id);
-create index on resnet.node(urn);
-create index on resnet.node(name);
-create index on resnet.node(nodetype);
+alter table node add PRIMARY KEY (id);
+create index on node(urn);
+create index on node(name);
+create index on node(nodetype);
 
-alter table resnet.pathway add PRIMARY KEY(id);
-create index on resnet.pathway(name);
-create index on resnet.pathway(type);
-create index on resnet.pathway(urn);
+alter table pathway add PRIMARY KEY(id);
+create index on pathway(name);
+create index on pathway(type);
+create index on pathway(urn);
 
 
-alter table resnet.reference add PRIMARY KEY(unique_id);
-create index on resnet.reference(id);
-create index on resnet.reference(tissue);
-create index on resnet.reference(pubyear);
-create index on resnet.reference(textref);
+alter table reference add PRIMARY KEY(unique_id);
+create index on reference(id);
+create index on reference(tissue);
+create index on reference(pubyear);
+create index on reference(textref);
 
-select * into resnet.temp_outkey from  (select control.id, string_agg(node.name, '|') as outname  from control, node where node.id = any(control.outkey) group by control.id)a;
-select * into resnet.temp_inkey from  (select control.id, string_agg(node.name, '|') as inname  from control, node where node.id = any(control.inkey) group by control.id)a;
-select * into resnet.temp_inoutkey from  (select control.id, string_agg(node.name, '|') as inoutname  from control, node where node.id = any(control.inoutkey) group by control.id)a;
+select * into temp_outkey from  (select control.id, string_agg(node.name, '|') as outname  from control, node where node.id = any(control.outkey) group by control.id)a;
+select * into temp_inkey from  (select control.id, string_agg(node.name, '|') as inname  from control, node where node.id = any(control.inkey) group by control.id)a;
+select * into temp_inoutkey from  (select control.id, string_agg(node.name, '|') as inoutname  from control, node where node.id = any(control.inoutkey) group by control.id)a;
 
 alter table control add column inname text;
 alter table control add column outname text;
@@ -42,16 +42,16 @@ drop table temp_outkey;
 drop table temp_inkey;
 drop table temp_inoutkey;
 
-create index on resnet.control(controltype);
-create index on resnet.control(ontology);
-create index on resnet.control(relationship);
-create index on resnet.control(effect);
-create index on resnet.control(mechanism);
-create index on resnet.control(inname);
-create index on resnet.control(outname);
-create index on resnet.control(inoutname);
-alter table resnet.control add column num_refs integer;
+create index on control(controltype);
+create index on control(ontology);
+create index on control(relationship);
+create index on control(effect);
+create index on control(mechanism);
+create index on control(inname);
+create index on control(outname);
+create index on control(inoutname);
+alter table control add column num_refs integer;
 
-update resnet.control set num_refs = count from (select count(reference.id) as count, control.id from resnet.reference, resnet.control  where reference.id = control.attributes group by control.id)a  where a.id= control.id;
+update control set num_refs = count from (select count(reference.id) as count, control.id from resnet.reference, resnet.control  where reference.id = control.attributes group by control.id)a  where a.id= control.id;
 
-ALTER TABLE resnet.reference add constraint control_ref  foreign key (id) references resnet.control(id);
+ALTER TABLE reference add constraint control_ref  foreign key (id) references resnet.control(id);

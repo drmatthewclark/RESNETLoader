@@ -102,7 +102,6 @@ def process_files():
     for  d  in dates:
         with conn.cursor() as cur:
             cur.execute('insert into resnet.version (name, value) values(%s, %s);', ('update', d) )
-        printlist(msg)
     conn.commit()
     conn.close
 

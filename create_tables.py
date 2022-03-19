@@ -54,7 +54,8 @@ def dedup(fname):
 def initdb():
     """ initialize db """
 
-    drop = "drop schema " + schema  + " cascade"
+    drop = "drop schema if exists " + schema  + " cascade;"
+
     sql = """
     create schema xxxx;
     create table  xxxx.version(name text, value text);
@@ -93,7 +94,7 @@ def initdb():
     with conn.cursor() as cur:
         for line in sql.split(';'):
            if line.strip() != '':
-              print(line)
+              print('sql', line)
               cur.execute(line)
               conn.commit()
 
@@ -101,13 +102,14 @@ def initdb():
 def indexdb():
 
     # create indices """
-    with open(pdir  + '/' + schema + '.sql', 'r') as sf:
-        sql = sf.read()
+    with open(pdir  + '/resnet.sql', 'r') as sf:
+        lsql = sf.read()
 
     conn = getConnection()
+    lsql = re.sub('xxxx', schema, lsql)
 
     with conn.cursor() as cur:
-        statements = sql.split(';')
+        statements = lsql.split(';')
         for statement in statements:
             if statement.strip() != '' and not statement.startswith('--'):
                 print(statement)
@@ -126,7 +128,7 @@ def combine_temp():
     conn = getConnection()
     tables = ['attr', 'node', 'control', 'pathway', 'reference' ]
 
-    lschema = 'resnet'
+    lschema = re.sub(schema, '_temp', '')
 
     for table in tables:
         sql = 'insert into ' + lschema + '.' + table + ' select * from ' + schema + '.' + table + ' on conflict do nothing '

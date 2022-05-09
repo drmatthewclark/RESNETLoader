@@ -15,6 +15,7 @@ cmd='aws --profile resnet s3 ls s3://psweb-data-updates/mammal/resnet17/'
 downloadcmd='aws --profile resnet s3 cp s3://psweb-data-updates/mammal/resnet17/xxxx  .  --no-progress'
 
 pdir = os.path.dirname(os.path.realpath(__file__)) # dir of this program
+files_downloaded = 0
 
 def runcmd(cmd):
     result = []
@@ -65,7 +66,8 @@ def getfiles():
             #  2022-01-01
             year = int(tdate[0:4])
             month = int(tdate[5:7])
-            day = int(tdate[9:10])
+            day  = int(tdate[8:10])
+            print(tdate, 'year', year, 'month', month, 'day', day)
             d = date(year, month, day)
             database[fname] = d
 
@@ -75,6 +77,8 @@ def getfiles():
 
 
 def process_files():
+    
+    global files_downloaded
 
     database = getfiles()
     # set of unique dates from files
@@ -84,7 +88,8 @@ def process_files():
     
         if checkthisupdate(database[file]) :  # exit if already present
             continue
-      
+     
+        files_downloaded += 1
         print('downloading',file, database[file])
         cmd = re.sub('xxxx',file,downloadcmd)
         msg = runcmd(cmd)
@@ -114,6 +119,11 @@ def load_files():
 
 
 def index():
+
+    if files_downloaded == 0:
+        print('nothing to index')
+        return
+
     update_nref = """
 update resnet.control 
   set num_refs = count 

@@ -67,7 +67,6 @@ def getfiles():
             year = int(tdate[0:4])
             month = int(tdate[5:7])
             day  = int(tdate[8:10])
-            print(tdate, 'year', year, 'month', month, 'day', day)
             d = date(year, month, day)
             database[fname] = d
 
